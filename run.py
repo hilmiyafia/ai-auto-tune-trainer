@@ -80,6 +80,7 @@ if __name__ == "__main__":
         "model.onnx", 
         input_names=["input"], 
         output_names=["output"],
+        dynamo=False,
         dynamic_axes={
             "input": {0: "batch", 2: "length"},
             "output": {0: "batch", 2: "length"}})
