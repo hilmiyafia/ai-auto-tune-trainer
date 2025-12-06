@@ -1,0 +1,4 @@
+venv/
+npys/
+__pycache__/
+logs/

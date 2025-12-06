@@ -20,29 +20,30 @@ PATH = r"logs\tuner\base\checkpoints"
 if __name__ == "__main__":
 
     print("")
-    print("#########################")
-    print("## 1/3 PREPROCESS DATA ##")
-    print("#########################")
+    print("╔═════════════════════╗")
+    print("║ 1/3 PREPROCESS DATA ║")
+    print("╚═════════════════════╝")
     print("")
 
     preprocess()
 
     print("")
-    print("#####################")
-    print("## 2/3 TRAIN MODEL ##")
-    print("#####################")
+    print("╔═════════════════╗")
+    print("║ 2/3 TRAIN MODEL ║")
+    print("╚═════════════════╝")
     print("")
 
     dataset = Dataset()
     val_set, train_set = random_split(dataset, [4, len(dataset) - 4])
     reflow = Reflow()
     logger = TensorBoardLogger("logs", "tuner", "base")
+    subprocess.Popen(["tensorboard", "--logdir=logs"])
 
-    # Load checkpoint
+    # Load latest checkpoint if exists
     checkpoint = None
     if os.path.exists(PATH):
         files = list(os.listdir(PATH))
-        files.sort()
+        files.sort(key=lambda x: int(x.split("=")[-1].split(".")[0]))
         if len(files) > 0:
             checkpoint = f"{PATH}\\{files[-1]}"
 
@@ -63,10 +64,11 @@ if __name__ == "__main__":
     # Save
     torch.save(reflow.state_dict(), "model.pt")
     
+
     print("")
-    print("######################")
-    print("## 3/3 EXPORT MODEL ##")
-    print("######################")
+    print("╔══════════════════╗")
+    print("║ 3/3 EXPORT MODEL ║")
+    print("╚══════════════════╝")
     print("")
 
     wrapper = Wrapper(Reflow.load("model.pt"), STEP_COUNT).eval()
@@ -84,7 +86,7 @@ if __name__ == "__main__":
     os.remove("model.pt")
 
     print("")
-    print("##########")
-    print("## DONE ##")
-    print("##########")
+    print("╔══════╗")
+    print("║ DONE ║")
+    print("╚══════╝")
     print("")
