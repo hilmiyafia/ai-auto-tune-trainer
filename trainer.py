@@ -34,7 +34,6 @@ class Trainer(lightning.LightningModule):
         return loss
     
     def validation_step(self, batch, _):
-        print("\nStep ", self.global_step, "/", self.total_step)
         data, target, base = batch
         result = torch.randn_like(target)
         for i in range(self.step_count):
@@ -59,3 +58,6 @@ class Trainer(lightning.LightningModule):
         image = torchvision.io.read_image("validation.png")
         self.logger.experiment.add_image("validation", image, self.global_step)
         os.remove("validation.png")
+
+    def on_validation_end(self):
+        print("\nStep", self.global_step, "/", self.total_step)
