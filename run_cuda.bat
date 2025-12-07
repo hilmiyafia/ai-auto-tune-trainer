@@ -30,6 +30,6 @@ IF EXIST requirements_cuda.txt (
     exit /b 1
 )
 
-python run.py
+python main.py
 
 pause
