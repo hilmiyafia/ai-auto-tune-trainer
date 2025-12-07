@@ -1,13 +1,5 @@
 @echo off
 
-chcp 65001 >nul
-
-echo(
-echo ╔══════════════════╗
-echo ║ 0/3 INITIALIZING ║
-echo ╚══════════════════╝
-echo(
-
 py -3.10 -m venv venv
 
 IF NOT EXIST "venv" (
