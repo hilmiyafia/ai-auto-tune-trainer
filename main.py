@@ -77,7 +77,7 @@ if __name__ == "__main__":
     torch.onnx.export(
         wrapper, 
         dummy, 
-        "model.onnx", 
+        "pitch.onnx", 
         input_names=["input"], 
         output_names=["output"],
         dynamo=False,
