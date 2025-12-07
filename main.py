@@ -56,7 +56,7 @@ if __name__ == "__main__":
         enable_model_summary=False,
         log_every_n_steps=3)
     trainer.fit(
-        Trainer(reflow, STEP_COUNT), 
+        Trainer(reflow, STEP_COUNT, STEPS), 
         ckpt_path=checkpoint,
         train_dataloaders=get_dataloader(train_set, BATCH_SIZE), 
         val_dataloaders=get_dataloader(val_set, BATCH_SIZE, False, False))
