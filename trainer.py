@@ -7,10 +7,11 @@ import matplotlib.pyplot as pyplot
 
 class Trainer(lightning.LightningModule):
     
-    def __init__(self, model, step_count):
+    def __init__(self, model, step_count, total_step):
         super().__init__()
         self.model = model
         self.step_count = step_count
+        self.total_step = total_step
     
     def configure_optimizers(self):
         return torch.optim.AdamW(self.model.parameters(), 2e-4)
@@ -33,6 +34,7 @@ class Trainer(lightning.LightningModule):
         return loss
     
     def validation_step(self, batch, _):
+        print("\nStep ", self.global_step, "/", self.total_step)
         data, target, base = batch
         result = torch.randn_like(target)
         for i in range(self.step_count):
