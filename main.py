@@ -3,6 +3,7 @@ import os
 import torch
 import lightning
 import subprocess
+import config
 from model import Reflow
 from trainer import Trainer
 from wrapper import Wrapper
@@ -11,10 +12,6 @@ from dataset import Dataset, get_dataloader
 from torch.utils.data import random_split
 from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 
-STEPS = 30000
-STEP_COUNT = 20
-VAL_INTERVAL = 1000
-BATCH_SIZE = 8
 PATH = r"logs\tuner\base\checkpoints"
 
 if __name__ == "__main__":
@@ -25,7 +22,10 @@ if __name__ == "__main__":
     print("╚═════════════════════╝")
     print("")
 
-    preprocess()
+    if not (os.path.exists("npys") and len(list(os.listdir("npys"))) > 0):
+        preprocess()
+    else:
+        print("Extracted data detected, reusing.")
 
     print("")
     print("╔═════════════════╗")
@@ -49,30 +49,39 @@ if __name__ == "__main__":
 
     # Train
     trainer = lightning.Trainer(
-        max_steps=STEPS, 
+        max_steps=config.TRAINING_STEP_COUNT, 
         logger=logger,
         check_val_every_n_epoch=None,
-        val_check_interval=VAL_INTERVAL,
+        enable_progress_bar=False,
+        val_check_interval=config.SAVE_INTERVAL,
         enable_model_summary=False,
         log_every_n_steps=3)
     trainer.fit(
-        Trainer(reflow, STEP_COUNT, STEPS), 
+        Trainer(
+            reflow, 
+            config.DENOISING_STEP_COUNT, 
+            config.TRAINING_STEP_COUNT), 
         ckpt_path=checkpoint,
-        train_dataloaders=get_dataloader(train_set, BATCH_SIZE), 
-        val_dataloaders=get_dataloader(val_set, BATCH_SIZE, False, False))
+        train_dataloaders=get_dataloader(train_set, config.BATCH_SIZE), 
+        val_dataloaders=get_dataloader(
+            val_set, 
+            config.BATCH_SIZE, 
+            False, 
+            False))
     
     # Save
     torch.save(reflow.state_dict(), "model.pt")
     
-
     print("")
     print("╔══════════════════╗")
     print("║ 3/3 EXPORT MODEL ║")
     print("╚══════════════════╝")
     print("")
 
-    wrapper = Wrapper(Reflow.load("model.pt"), STEP_COUNT).eval()
-    wrapper = torch.jit.script(wrapper)
+    wrapper = Wrapper(
+        Reflow.load("model.pt"), 
+        config.DENOISING_STEP_COUNT)
+    wrapper = torch.jit.script(wrapper.eval())
     dummy = torch.randn(1, 6, 1024)
     torch.onnx.export(
         wrapper, 

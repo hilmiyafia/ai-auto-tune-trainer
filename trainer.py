@@ -5,6 +5,9 @@ import lightning
 import torchvision
 import matplotlib.pyplot as pyplot
 
+from lightning.pytorch.callbacks import TQDMProgressBar
+from tqdm.auto import tqdm
+
 class Trainer(lightning.LightningModule):
     
     def __init__(self, model, step_count, total_step):
@@ -15,6 +18,14 @@ class Trainer(lightning.LightningModule):
     
     def configure_optimizers(self):
         return torch.optim.AdamW(self.model.parameters(), 2e-4)
+    
+    def on_train_start(self):
+        self.progress_bar = tqdm(
+            total=self.total_step,
+            desc=f"Step",
+            initial=self.global_step,
+            position=0,
+            leave=True)
     
     def training_step(self, batch, _):
         data, target, _ = batch
@@ -30,8 +41,14 @@ class Trainer(lightning.LightningModule):
             target = target - noise            
         output = self.model(noisy, time)
         loss = (output - target).square().mean()
-        self.log("loss", loss, True)
+        self.log("loss", loss)
+        self.progress_bar.n = self.global_step
+        self.progress_bar.last_print_n = self.global_step
+        self.progress_bar.refresh()
         return loss
+    
+    def on_train_end(self):
+        self.progress_bar.close()
     
     def validation_step(self, batch, _):
         data, target, base = batch
@@ -58,6 +75,3 @@ class Trainer(lightning.LightningModule):
         image = torchvision.io.read_image("validation.png")
         self.logger.experiment.add_image("validation", image, self.global_step)
         os.remove("validation.png")
-
-    def on_validation_end(self):
-        print("\nStep", self.global_step, "/", self.total_step)
