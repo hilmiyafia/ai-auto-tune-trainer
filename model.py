@@ -43,3 +43,13 @@ class Reflow(torch.nn.Module):
         model.eval()
         model = torch.jit.trace(model, (dummy_data, dummy_time))
         return model
+
+if __name__ == "__main__":
+    model = Reflow()
+    dummy = torch.rand(1, 7, 1024)
+    time = torch.ones(1, 1, 1)
+    torch.onnx.export(model, (dummy, time), "t.onnx")
+    import subprocess, os
+    subprocess.run(["onnxsim", "t.onnx", "test.onnx"])
+    os.remove("t.onnx")
+    
