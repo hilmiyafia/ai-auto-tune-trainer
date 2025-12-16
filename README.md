@@ -2,7 +2,7 @@
 This repository contains the OpenUtau AI Auto Tune trainer.
 
 ## How to Use
-See this video for the details: [video](https://youtu.be/wphtRVZiujs?t=316)
+See this video for the details: [video](https://youtu.be/wphtRVZiujs?t=335)
 1. Gather your audio samples.
 2. Label your audio samples. The labels should be separated by notes, NOT by phonemes like in DiffSinger.
 3. Convert the labels to USTs. Make sure that the notes in the USTs are on the correct pitch (not flat). And make sure that each UST has the same file name to its corresponding audio sample.
