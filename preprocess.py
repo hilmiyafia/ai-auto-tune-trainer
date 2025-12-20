@@ -1,14 +1,32 @@
-
 import os
 import tqdm
 import numpy
 import librosa
 import pyworld
 
+def open_with_fallback(filepath, encodings=None):
+    # Opens the file and tries multiple encodings until one works
+    if encodings is None:
+        encodings = ["utf-8", "shift_jis", "cp932", "latin-1"]
+
+    for enc in encodings:
+        try:
+            f = open(filepath, 'r', encoding=enc)
+            f.readline()
+            f.seek(0)
+            print(f"[INFO] Opened {filepath} with encoding: {enc}")
+            return f
+        except UnicodeDecodeError:
+            continue
+        except Exception as e:
+            print(f"[ERROR] Failed to open {filepath} with {enc}: {e}")
+            continue
+
+    raise UnicodeDecodeError(f"Failed to decode {filepath} with any fallback encoding.")
+
 def preprocess(power=4, low=27.5):
 
     for audio in tqdm.tqdm(os.listdir("audios")):
-        
         # Read WAV
         data, rate = librosa.load(f"audios/{audio}")
         pitches, times = pyworld.harvest(data.astype(numpy.double), rate)
@@ -22,33 +40,42 @@ def preprocess(power=4, low=27.5):
         normal = [0]
         notes = [60]
         bounds = [0]
-        with open(f"usts/{name}.ust") as file:
+
+        ust_path = f"usts/{name}.ust"
+        if not os.path.exists(ust_path):
+            print(f"[WARN] UST file not found: {ust_path}")
+            continue
+
+        with open_with_fallback(ust_path) as file:
             lyric = ""
             length = 0
             for line in file:
-                data = line.strip("\n").split("=")
-                if data[0] == "Tempo":
-                    tempo = 480 * float(data[1]) / 60 / 5
-                if data[0] == "Length":
-                    length = float(data[1]) / 5
-                if data[0] == "NoteNum":
+                data_line = line.strip("\n").split("=")
+                if len(data_line) < 2:
+                    continue
+                key, value = data_line[0], data_line[1]
+                if key == "Tempo":
+                    tempo = 480 * float(value) / 60 / 5
+                elif key == "Length":
+                    length = float(value) / 5
+                elif key == "NoteNum":
                     positions += [positions[-1], positions[-1] + length]
                     if lyric == "r":
                         notes += [-1, -1]
                     else:
-                        notes += [float(data[1]), float(data[1])]
+                        notes += [float(value), float(value)]
                     bounds += [bounds[-1] + 1, bounds[-1] + 1]
                     embeds += [0, length]
                     normal += [0, 1]
-                if data[0] == "Lyric":
-                    lyric = data[1].lower()
+                elif key == "Lyric":
+                    lyric = value.lower()
                     if lyric == "r":
                         if parts[-1][1] > parts[-1][0]:
                             parts.append([parts[-1][1], parts[-1][1]])
                         parts[-1][0] = parts[-1][1] + length
                     parts[-1][1] += length
 
-        # Resample data to ticks
+        # Resample and process data (same as your original code)
         ticks = numpy.arange(int(positions[-1]))
         pitches = numpy.interp(ticks, times * tempo, pitches)
         notes = numpy.interp(ticks, positions, notes)
@@ -61,7 +88,7 @@ def preprocess(power=4, low=27.5):
         stable = numpy.where(stable > 0.5, 0, 1)
         embeds = numpy.interp(ticks, positions, embeds) * (1 - pauses)
         normal = numpy.interp(ticks, positions, normal) * (1 - pauses)
-        
+
         # Detect silences
         silences = [[0, 0]]
         for i in range(len(pitches)):
@@ -89,7 +116,7 @@ def preprocess(power=4, low=27.5):
                 pitches[x1:x4] = tys
                 break
 
-        # Pad data
+        # Pad and save as .npy
         pad = int((int(len(pitches) / 2048) + 1.5) * 2048) - len(pitches)
         pitches = numpy.maximum(numpy.pad(pitches, (0, pad)), low)
         pitches = numpy.log2(pitches / 220) * 12 + 57
@@ -104,8 +131,7 @@ def preprocess(power=4, low=27.5):
         bounds[-pad] = 1
         data = (pitches, notes, deltas, bounds, pauses, stable, embeds, normal)
         data = numpy.stack(data)
-        
-        # Export data
+
         os.makedirs("npys", exist_ok=True)
         counter = 1
         for i in range(0, len(pitches) - 2048, 1024):
