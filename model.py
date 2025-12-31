@@ -9,10 +9,10 @@ class Reflow(torch.nn.Module):
         counts = [32, 32, 32, 64, 64, 128, 128]
         positions = torch.pow(10000, -torch.arange(8) / 8)[None, :, None]
         self.register_buffer("positions", positions)
-        self.downs = torch.nn.ModuleList([Conv(5 + 16, 32)])
+        self.downs = torch.nn.ModuleList([Conv(5 + 16, counts[0])])
         for i in range(len(counts) - 1):
             self.downs.append(Down(counts[i], counts[i + 1]))
-        self.ups = torch.nn.ModuleList([Residual(128)])
+        self.ups = torch.nn.ModuleList([Residual(counts[-1])])
         for i in reversed(range(len(counts) - 1)):
             self.ups.append(Up(2 * counts[i + 1], counts[i]))
         self.project = torch.nn.Conv1d(32, 1, 1, bias=False)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     model = Reflow()
     dummy = torch.rand(1, 7, 1024)
     time = torch.ones(1, 1, 1)
-    torch.onnx.export(model, (dummy, time), "t.onnx")
+    torch.onnx.export(model, (dummy, time), "t.onnx", dynamo=False)
     import subprocess, os
     subprocess.run(["onnxsim", "t.onnx", "test.onnx"])
     os.remove("t.onnx")
