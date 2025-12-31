@@ -46,7 +46,7 @@ def preprocess(power=4, low=27.5):
 
         ust_path = f"usts/{name}.ust"
         if not os.path.exists(ust_path):
-            skips.append(audio)
+            skips.append([audio, "(missing ust)"])
             continue
 
         with open_with_fallback(ust_path) as file:
@@ -93,7 +93,7 @@ def preprocess(power=4, low=27.5):
         template_b = numpy.maximum(notes, 33)
         corr = numpy.corrcoef(template_a, template_b)[0, 1]
         if corr < .5:
-            skips.append(audio)
+            skips.append([audio, f"(low ust-audio alignment score: {int(corr * 100)}%)"])
             continue
 
         # Resample data to ticks
@@ -152,9 +152,9 @@ def preprocess(power=4, low=27.5):
             counter += 1
 
     if len(skips) > 0:
-        print("Skipped files (low audio-ust alignment score or missing ust):")
+        print("Skipped files:")
         for skip in skips:
-            print(skip)
+            print(" ".join(skip))
 
 if __name__ == "__main__":
     preprocess()
