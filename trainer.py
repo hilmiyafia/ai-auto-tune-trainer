@@ -28,7 +28,7 @@ class Trainer(lightning.LightningModule):
             leave=True)
     
     def training_step(self, batch, _):
-        data, target, _ = batch
+        data, target, _, mask = batch
         with torch.no_grad():
             noise = torch.randn_like(target)
             time = torch.randint(
@@ -40,7 +40,7 @@ class Trainer(lightning.LightningModule):
             noisy = torch.cat((data, noisy), 1)
             target = target - noise            
         output = self.model(noisy, time)
-        loss = (output - target).square().mean()
+        loss = ((output - target) * mask).square().sum() / mask.sum()
         self.log("loss", loss)
         self.progress_bar.n = self.global_step
         self.progress_bar.last_print_n = self.global_step
@@ -51,7 +51,7 @@ class Trainer(lightning.LightningModule):
         self.progress_bar.close()
     
     def validation_step(self, batch, _):
-        data, target, base = batch
+        data, target, base, _ = batch
         result = torch.randn_like(target)
         for i in range(self.step_count):
             time = torch.ones(len(data), 1, 1, device=data.device) * i
@@ -65,8 +65,8 @@ class Trainer(lightning.LightningModule):
         columns = int(len(result) / rows + 0.5)
         for i in range(len(result)):
             pyplot.subplot(rows, columns, i + 1)
-            pyplot.plot(result[i, 0].cpu().detach().numpy())
-            pyplot.plot(base[i, 0].cpu().detach().numpy())
+            pyplot.plot(result[i, 0].cpu().detach().numpy(), linewidth=1)
+            pyplot.plot(base[i, 0].cpu().detach().numpy(), linewidth=1)
             pyplot.ylim(20, 80)
         pyplot.tight_layout()
         pyplot.savefig("validation.png", dpi=150)

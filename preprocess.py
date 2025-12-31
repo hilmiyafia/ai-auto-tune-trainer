@@ -26,6 +26,8 @@ def open_with_fallback(filepath, encodings=None):
 
 def preprocess(power=4, low=27.5):
 
+    skips = []
+
     for audio in tqdm.tqdm(os.listdir("audios")):
         # Read WAV
         data, rate = librosa.load(f"audios/{audio}")
@@ -40,10 +42,11 @@ def preprocess(power=4, low=27.5):
         normal = [0]
         notes = [60]
         bounds = [0]
+        tables = []
 
         ust_path = f"usts/{name}.ust"
         if not os.path.exists(ust_path):
-            print(f"[WARN] UST file not found: {ust_path}")
+            skips.append(audio)
             continue
 
         with open_with_fallback(ust_path) as file:
@@ -74,12 +77,26 @@ def preprocess(power=4, low=27.5):
                             parts.append([parts[-1][1], parts[-1][1]])
                         parts[-1][0] = parts[-1][1] + length
                     parts[-1][1] += length
+                if data[0][2:-1].isnumeric() or data[0] == "[#TRACKEND]":
+                    tables.append([length, length / tempo])
+        tables = numpy.array(tables)
+        tables = numpy.cumsum(tables, 0)
 
         # Resample and process data (same as your original code)
         ticks = numpy.arange(int(positions[-1]))
-        pitches = numpy.interp(ticks, times * tempo, pitches)
+        pitches = numpy.interp(ticks, numpy.interp(times, tables[:, 1], tables[:, 0]), pitches)
         notes = numpy.interp(ticks, positions, notes)
         pauses = numpy.where(notes < 0, 1, 0)
+
+        # Check audio ust alignment
+        template_a = numpy.log2(numpy.maximum(pitches, 55) / 440) * 12 + 69
+        template_b = numpy.maximum(notes, 33)
+        corr = numpy.corrcoef(template_a, template_b)[0, 1]
+        if corr < .5:
+            skips.append(audio)
+            continue
+
+        # Resample data to ticks
         deltas = (notes[1:] - notes[:-1]) * (notes[1:] > 0) * (notes[:-1] > 0)
         deltas = numpy.pad(deltas, (1, 0))
         bounds = numpy.interp(ticks, positions, bounds)
@@ -98,22 +115,15 @@ def preprocess(power=4, low=27.5):
                 silences[-1][0] = silences[-1][1] + 1
             silences[-1][1] += 1
 
-        # Interpolate silences in parts
-        powers = numpy.arange(power)[None]
+        # Create mask
+        mask = numpy.ones_like(pitches)
         for xa, xb in silences:
             for part in parts:
                 if xa < part[0] or part[1] < xa:
                     continue
                 if xb < part[0] or part[1] < xb:
                     continue
-                x1, x2, x3, x4 = xa - 10, xa - 5, xb + 5, xb + 10
-                xs = ticks[x1:x4]
-                ys = pitches[x1:x4]
-                dxs = numpy.concatenate((ticks[x1:x2], ticks[x3:x4])) - xs[0]
-                dys = numpy.concatenate((pitches[x1:x2], pitches[x3:x4]))
-                txs = (xs - xs[0])[:, None] ** powers
-                tys = txs @ numpy.linalg.pinv(dxs[:, None] ** powers) @ dys
-                pitches[x1:x4] = tys
+                mask[xa - 10:xb + 10] = 0
                 break
 
         # Pad and save as .npy
@@ -128,8 +138,9 @@ def preprocess(power=4, low=27.5):
         stable = numpy.pad(stable, (0, pad))
         embeds = numpy.pad(embeds, (0, pad))
         normal = numpy.pad(normal, (0, pad)) * 100
+        mask = numpy.pad(mask, (0, pad), constant_values=1)
         bounds[-pad] = 1
-        data = (pitches, notes, deltas, bounds, pauses, stable, embeds, normal)
+        data = (pitches, notes, deltas, bounds, pauses, stable, embeds, normal, mask)
         data = numpy.stack(data)
 
         os.makedirs("npys", exist_ok=True)
@@ -139,3 +150,11 @@ def preprocess(power=4, low=27.5):
                 continue
             numpy.save(f"npys/{name}_{counter}.npy", data[:, i:i + 2048])
             counter += 1
+
+    if len(skips) > 0:
+        print("Skipped files (low audio-ust alignment score or missing ust):")
+        for skip in skips:
+            print(skip)
+
+if __name__ == "__main__":
+    preprocess()
