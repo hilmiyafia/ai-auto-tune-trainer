@@ -14,12 +14,12 @@ def open_with_fallback(filepath, encodings=None):
             f = open(filepath, 'r', encoding=enc)
             f.readline()
             f.seek(0)
-            print(f"[INFO] Opened {filepath} with encoding: {enc}")
+            # print(f"[INFO] Opened {filepath} with encoding: {enc}")
             return f
         except UnicodeDecodeError:
             continue
         except Exception as e:
-            print(f"[ERROR] Failed to open {filepath} with {enc}: {e}")
+            # print(f"[ERROR] Failed to open {filepath} with {enc}: {e}")
             continue
 
     raise UnicodeDecodeError(f"Failed to decode {filepath} with any fallback encoding.")
@@ -54,7 +54,9 @@ def preprocess(power=4, low=27.5):
             length = 0
             for line in file:
                 data_line = line.strip("\n").split("=")
-                if len(data_line) < 2:
+                if len(data_line) != 2:
+                    if data_line[0][2:-1].isnumeric() or data_line[0] == "[#TRACKEND]":
+                        tables.append([length, length / tempo])
                     continue
                 key, value = data_line[0], data_line[1]
                 if key == "Tempo":
@@ -77,8 +79,6 @@ def preprocess(power=4, low=27.5):
                             parts.append([parts[-1][1], parts[-1][1]])
                         parts[-1][0] = parts[-1][1] + length
                     parts[-1][1] += length
-                if data[0][2:-1].isnumeric() or data[0] == "[#TRACKEND]":
-                    tables.append([length, length / tempo])
         tables = numpy.array(tables)
         tables = numpy.cumsum(tables, 0)
 
