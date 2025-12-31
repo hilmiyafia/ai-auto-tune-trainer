@@ -19,7 +19,7 @@ class Dataset(torch.utils.data.Dataset):
             offset = numpy.random.randint(1024)
         data = torch.FloatTensor(data[:, offset:offset + 1024])
         base = gaussian_blur(data[None, None, None, 1], (13, 1))[0, 0]
-        return data[2:], data[0] - base, base
+        return data[2:-1], data[0] - base, base, data[-1:]
 
 def get_dataloader(dataset, batch_size=8, shuffle=True, drop_last=True):
     return torch.utils.data.DataLoader(
@@ -33,9 +33,14 @@ def get_dataloader(dataset, batch_size=8, shuffle=True, drop_last=True):
 if __name__ == "__main__":
     import matplotlib.pyplot as pyplot
     dataset = Dataset()
-    test, target, base = dataset[0]
-    for k in range(test.shape[0]):
-        pyplot.plot(test[k])
-    pyplot.plot(base[0])
-    pyplot.plot(target[0])
+    for i in range(6):
+        test, target, base, mask = dataset[-i]
+        # for k in range(test.shape[0]):
+        #     pyplot.plot(test[k])
+        # pyplot.plot()
+        pyplot.subplot(2, 3, i + 1)
+        pyplot.plot(target[0] + base[0])
+        pyplot.plot(base[0])
+        pyplot.plot(mask[0])
+    print(test.shape, target.shape, base.shape, mask.shape)
     pyplot.show()
