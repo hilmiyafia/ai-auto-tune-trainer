@@ -19,7 +19,9 @@ class Dataset(torch.utils.data.Dataset):
             offset = numpy.random.randint(1024)
         data = torch.FloatTensor(data[:, offset:offset + 1024])
         base = gaussian_blur(data[None, None, None, 1], (13, 1))[0, 0]
-        return data[2:-1], data[0] - base, base, data[-1:]
+        target = data[0] - base
+        target = torch.sign(target) * (target.abs() + 1).log() / 2
+        return data[2:-1], target, base, data[-1:]
 
 def get_dataloader(dataset, batch_size=8, shuffle=True, drop_last=True):
     return torch.utils.data.DataLoader(
