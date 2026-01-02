@@ -146,7 +146,7 @@ def preprocess(power=4, low=27.5):
         os.makedirs("npys", exist_ok=True)
         counter = 1
         for i in range(0, len(pitches) - 2048, 1024):
-            if numpy.sum(1 - pauses[i:i + 2048]) < 256:
+            if numpy.sum(1 - pauses[i:i + 2048]) < 0.5:
                 continue
             numpy.save(f"npys/{name}_{counter}.npy", data[:, i:i + 2048])
             counter += 1

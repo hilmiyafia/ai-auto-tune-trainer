@@ -66,9 +66,9 @@ class Trainer(lightning.LightningModule):
         columns = int(len(result) / rows + 0.5)
         for i in range(len(result)):
             pyplot.subplot(rows, columns, i + 1)
-            pyplot.plot(base[i, 0].cpu().detach().numpy(), linewidth=1)
+            pyplot.plot(base[i, 0].cpu().detach().numpy(), linewidth=1, color="tab:orange")
             # pyplot.plot((base + target)[i, 0].cpu().detach().numpy(), linewidth=1)
-            pyplot.plot(result[i, 0].cpu().detach().numpy(), linewidth=1)
+            pyplot.plot(result[i, 0].cpu().detach().numpy(), linewidth=1, color="tab:blue")
             pyplot.ylim(20, 80)
         pyplot.tight_layout()
         pyplot.savefig("validation.png", dpi=150)
