@@ -2,3 +2,5 @@ venv/
 npys/
 __pycache__/
 logs/
+audios/
+usts/
