@@ -6,7 +6,7 @@ class Reflow(torch.nn.Module):
     
     def __init__(self):
         super().__init__()
-        counts = [32, 32, 32, 64, 64, 128, 128]
+        counts = [32, 48, 64, 80, 96, 112, 128]
         positions = torch.pow(10000, -torch.arange(8) / 8)[None, :, None]
         self.register_buffer("positions", positions)
         self.downs = torch.nn.ModuleList([Conv(5 + 16, counts[0])])

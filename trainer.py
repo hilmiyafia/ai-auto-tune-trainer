@@ -40,7 +40,7 @@ class Trainer(lightning.LightningModule):
             noisy = torch.cat((data, noisy), 1)
             target = target - noise            
         output = self.model(noisy, time)
-        loss = ((output - target).square() * mask).sum() / mask.sum()
+        loss = ((output - target).abs() * mask).sum() / mask.sum()
         self.log("loss", loss)
         self.progress_bar.n = self.global_step
         self.progress_bar.last_print_n = self.global_step

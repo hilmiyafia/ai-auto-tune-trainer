@@ -3,8 +3,9 @@ import torch
 
 def Conv(c_in, c_out):
     return torch.nn.Sequential(
-        torch.nn.Conv1d(c_in, c_out, 3, 1, 1),
-        torch.nn.LeakyReLU())
+        torch.nn.Conv1d(c_in, c_out, 3, 1, 1, bias=False),
+        torch.nn.BatchNorm1d(c_out),
+        torch.nn.SiLU())
 
 class Residual(torch.nn.Module):
 
