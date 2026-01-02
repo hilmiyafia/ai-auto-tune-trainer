@@ -15,7 +15,7 @@ class Reflow(torch.nn.Module):
         self.ups = torch.nn.ModuleList([Residual(counts[-1])])
         for i in reversed(range(len(counts) - 1)):
             self.ups.append(Up(2 * counts[i + 1], counts[i]))
-        self.project = torch.nn.Conv1d(32, 1, 1, bias=False)
+        self.project = torch.nn.Conv1d(counts[0], 1, 1, bias=False)
 
     def embed(self, time):
         time = time * self.positions

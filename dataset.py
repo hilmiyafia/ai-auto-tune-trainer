@@ -15,7 +15,7 @@ class Dataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         data = numpy.load(self.files[index])
         offset = numpy.random.randint(1024)
-        while numpy.sum(1 - data[4, offset:offset + 1024]) < 0.5:
+        while numpy.sum(1 - data[4, offset:offset + 1024]) < 256:
             offset = numpy.random.randint(1024)
         data = torch.FloatTensor(data[:, offset:offset + 1024])
         base = gaussian_blur(data[None, None, None, 1], (13, 1))[0, 0]
