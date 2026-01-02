@@ -35,4 +35,5 @@ class Wrapper(torch.nn.Module):
             alpha = (time + 1) / self.step_count
             result = result * alpha + torch.randn_like(result) * (1 - alpha)
             i += 1
+        result = torch.sign(result) * ((result.abs() * 2).exp() - 1)
         return self.blur(result + base)
