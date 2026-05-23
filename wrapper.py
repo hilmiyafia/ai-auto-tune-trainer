@@ -26,11 +26,12 @@ class Wrapper(torch.nn.Module):
         deltas = torch.nn.functional.pad(deltas, (1, 0), "reflect")
         deltas = torch.concat((deltas, x[:, 1:]), 1)
         result = torch.randn_like(base)
+        code = torch.randn(base.shape[0], 32, base.shape[2]).to(result.device)
         i = torch.tensor(0)
         while i < self.step_count:
             time = torch.ones(n, 1, 1, device=x.device) * i
             noisy = torch.cat((deltas, result), 1)
-            output = self.model(noisy, time)
+            output = self.model(noisy, code, time)
             result = result + output * (1 - time / self.step_count)
             alpha = (time + 1) / self.step_count
             result = result * alpha + torch.randn_like(result) * (1 - alpha)

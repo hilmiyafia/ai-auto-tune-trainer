@@ -4,7 +4,7 @@ import torch
 import lightning
 import subprocess
 import config
-from model import Reflow
+from model import Reflow, Encoder, Critic
 from trainer import Trainer
 from wrapper import Wrapper
 from preprocess import preprocess
@@ -36,8 +36,10 @@ if __name__ == "__main__":
     dataset = Dataset()
     val_set, train_set = random_split(dataset, [4, len(dataset) - 4])
     reflow = Reflow()
+    encoder = Encoder()
+    critic = Critic()
     logger = TensorBoardLogger("logs", "tuner", "base")
-    subprocess.Popen(["tensorboard", "--logdir=logs"])
+    tensorboard = subprocess.Popen(["tensorboard", "--logdir=logs"])
 
     # Load latest checkpoint if exists
     checkpoint = None
@@ -59,6 +61,8 @@ if __name__ == "__main__":
     trainer.fit(
         Trainer(
             reflow, 
+            encoder,
+            critic,
             config.DENOISING_STEP_COUNT, 
             config.TRAINING_STEP_COUNT), 
         ckpt_path=checkpoint,
@@ -68,6 +72,9 @@ if __name__ == "__main__":
             config.BATCH_SIZE, 
             False, 
             False))
+    
+    tensorboard.terminate()
+    tensorboard.wait()
     
     # Save
     torch.save(reflow.state_dict(), "model.pt")
