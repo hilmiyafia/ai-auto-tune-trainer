@@ -37,7 +37,7 @@ if __name__ == "__main__":
     val_set, train_set = random_split(dataset, [4, len(dataset) - 4])
     reflow = Reflow()
     logger = TensorBoardLogger("logs", "tuner", "base")
-    subprocess.Popen(["tensorboard", "--logdir=logs"])
+    tensorboard = subprocess.Popen(["tensorboard", "--logdir=logs"])
 
     # Load latest checkpoint if exists
     checkpoint = None
@@ -71,6 +71,9 @@ if __name__ == "__main__":
     
     # Save
     torch.save(reflow.state_dict(), "model.pt")
+
+    tensorboard.terminate()
+    tensorboard.wait()
     
     print("")
     print("╔══════════════════╗")
