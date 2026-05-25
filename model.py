@@ -9,12 +9,12 @@ class Reflow(torch.nn.Module):
         counts = [32, 48, 64, 80, 96, 112, 128]
         positions = torch.pow(10000, -torch.arange(8) / 8)[None, :, None]
         self.register_buffer("positions", positions)
-        self.downs = torch.nn.ModuleList([Conv(5 + 16, counts[0])])
+        self.downs = torch.nn.ModuleList([torch.nn.Conv1d(5 + 16, counts[0], 1)])
         for i in range(len(counts) - 1):
-            self.downs.append(Down(counts[i], counts[i + 1]))
-        self.ups = torch.nn.ModuleList([Residual(counts[-1])])
+            self.downs.append(Down(counts[i], counts[i + 1], int(128 / (2 ** i)) + 1))
+        self.ups = torch.nn.ModuleList([Residual(counts[-1], 3)])
         for i in reversed(range(len(counts) - 1)):
-            self.ups.append(Up(2 * counts[i + 1], counts[i]))
+            self.ups.append(Up(2 * counts[i + 1], counts[i], int(128 / (2 ** i)) + 1))
         self.project = torch.nn.Conv1d(counts[0], 1, 1, bias=False)
 
     def embed(self, time):
