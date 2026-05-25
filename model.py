@@ -11,10 +11,10 @@ class Reflow(torch.nn.Module):
         self.register_buffer("positions", positions)
         self.downs = torch.nn.ModuleList([torch.nn.Conv1d(5 + 16, counts[0], 1)])
         for i in range(len(counts) - 1):
-            self.downs.append(Down(counts[i], counts[i + 1], int(128 / (2 ** i)) + 1))
-        self.ups = torch.nn.ModuleList([Residual(counts[-1], 3)])
+            self.downs.append(Down(counts[i], counts[i + 1], int(512 / (2 ** i)) + 1))
+        self.ups = torch.nn.ModuleList([Residual(counts[-1], 9)])
         for i in reversed(range(len(counts) - 1)):
-            self.ups.append(Up(2 * counts[i + 1], counts[i], int(128 / (2 ** i)) + 1))
+            self.ups.append(Up(2 * counts[i + 1], counts[i], int(512 / (2 ** i)) + 1))
         self.project = torch.nn.Conv1d(counts[0], 1, 1, bias=False)
 
     def embed(self, time):

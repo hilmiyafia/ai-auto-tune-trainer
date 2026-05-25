@@ -5,7 +5,9 @@ class MovingNorm(torch.nn.Module):
 
     def __init__(self, channel, size):
         super().__init__()
-        kernel = 1 - (2 * torch.arange(size) / size - 1).abs()
+        std = (size - 1) / 6
+        kernel = (torch.arange(size) - (size - 1) / 2) / std
+        kernel = torch.exp(-0.5 * kernel.square())
         kernel = kernel / kernel.sum()
         self.register_buffer("kernel", kernel.repeat((channel, 1, 1)))
         self.pad = torch.nn.ZeroPad1d(size // 2)
@@ -19,11 +21,21 @@ class MovingNorm(torch.nn.Module):
         std = (torch.mean(delta.square(), (0, 2), True) + 1e-9).sqrt()
         return self.mean + delta * self.std / std
 
+class Snake(torch.nn.Module):
+
+    def __init__(self, channel):
+        super().__init__()
+        self.alpha = torch.nn.Parameter(torch.randn(1, channel, 1) * 0.001 - 2)
+
+    def forward(self, x):
+        alpha = 0.1 + torch.nn.functional.sigmoid(self.alpha) * 10
+        return x + torch.sin(alpha * x).square() / alpha
+
 def Conv(c_in, c_out, size):
     return torch.nn.Sequential(
         torch.nn.Conv1d(c_in, c_out, 3, 1, 1, bias=False),
         MovingNorm(c_out, size),
-        torch.nn.SiLU())
+        Snake(c_out))
 
 class Residual(torch.nn.Module):
 
