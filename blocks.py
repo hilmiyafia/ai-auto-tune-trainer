@@ -1,10 +1,20 @@
 
 import torch
 
+class LayerNorm(torch.nn.Module):
+
+    def __init__(self, c):
+        super().__init__()
+        self.norm = torch.nn.LayerNorm(c)
+
+    def forward(self, x):
+        x = torch.permute(x, (0, 2, 1))
+        return torch.permute(self.norm(x), (0, 2, 1))
+
 def Conv(c_in, c_out):
     return torch.nn.Sequential(
         torch.nn.Conv1d(c_in, c_out, 3, 1, 1, bias=False),
-        torch.nn.BatchNorm1d(c_out),
+        LayerNorm(c_out),
         torch.nn.SiLU())
 
 class Residual(torch.nn.Module):
